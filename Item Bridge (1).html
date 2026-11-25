@@ -1,0 +1,733 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Item Bridge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-width column. Hero with the bridge diagram, then request form, process steps, trust, safety. */
+:root{
+  --bg:#0c0e13;
+  --surface:#141822;
+  --surface-2:#1b2130;
+  --line:#272f41;
+  --fg:#e9ecf3;
+  --muted:#9099ae;
+  --accent:#8fb0ff;
+  --accent-soft:rgba(143,176,255,.14);
+  --accent-ink:#0b1226;
+  --am:#f7a8d1;
+  --mm2:#ff7a7a;
+  --ok:#78dca8;
+  --warn:#ffd27a;
+  --err:#ff8e8e;
+  --display:"Unbounded","Inter",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--fg);
+  font:400 16px/1.55 var(--body);
+  padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+section,fieldset{min-width:0}
+section{display:flex;flex-direction:column;gap:14px}
+h1,h2,p{margin:0}
+h1{font:600 clamp(24px,6.6vw,34px)/1.18 var(--display);letter-spacing:-.01em;text-wrap:balance}
+h2{font:600 17px/1.3 var(--display);text-wrap:balance}
+.muted{color:var(--muted)}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font:600 15px var(--display)}
+.lang{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.lang button{font:600 13px var(--body);color:var(--muted);background:transparent;border:0;padding:8px 14px;min-height:36px;cursor:pointer}
+.lang button.on{background:var(--surface-2);color:var(--fg)}
+
+/* hero */
+.hero{gap:16px}
+.eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:600 12px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.am{background:var(--am)}.dot.mm{background:var(--mm2)}
+.hero .lead{color:var(--muted);max-width:52ch}
+.hero .actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font:600 15px var(--body);text-decoration:none;cursor:pointer;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.small{min-height:40px;padding:0 14px;font-size:14px;align-self:flex-start}
+input[type=text],input[type=number],select,textarea{
+  width:100%;font:400 16px/1.3 var(--body);color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0;
+}
+input::placeholder,textarea::placeholder{color:#677089}
+textarea{resize:vertical}
+label.lbl{display:block;font:600 14px var(--body);margin-bottom:6px}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.form{display:flex;flex-direction:column;gap:22px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+legend{padding:0;margin-bottom:10px;font:600 14px var(--body);display:flex;align-items:center;gap:8px}
+.tag{font:600 12px var(--body);padding:3px 9px;border-radius:999px;border:1px solid currentColor}
+.g-am{color:var(--am)}.g-mm{color:var(--mm2)}
+
+/* direction cards */
+.dirs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dir{position:relative;display:block}
+.dir input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.dir-body{display:flex;flex-direction:column;gap:4px;height:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
+.dir-body b{font:600 15px var(--body)}
+.dir-body span{font-size:13px;color:var(--muted)}
+.dir input:checked+.dir-body{border-color:var(--accent);background:var(--accent-soft)}
+.dir input:focus-visible+.dir-body{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:360px){.dirs{grid-template-columns:1fr}}
+
+/* item rows */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.item-main{display:grid;grid-template-columns:minmax(0,1fr) 64px 44px;gap:8px}
+.item-extra{display:flex;flex-wrap:wrap;gap:8px}
+.item-extra select{width:auto;flex:1 1 120px}
+.icon-btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:400 22px/1 var(--body);cursor:pointer}
+.icon-btn:disabled{opacity:.35;cursor:default}
+.chip{position:relative;display:inline-flex}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.chip span{padding:10px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font:500 14px var(--body);background:var(--bg)}
+.chip input:checked+span{border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.check{display:flex;align-items:flex-start;gap:12px;cursor:pointer;font-size:15px}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+
+/* output */
+#out{font:400 13px/1.55 var(--mono);color:var(--fg);background:var(--bg)}
+.btns{display:flex;flex-direction:column;gap:10px}
+@media (min-width:480px){.btns{flex-direction:row}.btns .btn{flex:1}}
+.status{min-height:22px;font-size:14px}
+.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.err{color:var(--err)}
+
+/* diagram */
+.diagram svg{width:100%;height:auto;display:block}
+.d-box{fill:var(--surface-2);stroke:var(--line);stroke-width:1}
+.d-box.c{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}
+.d-title{fill:var(--fg);font:600 13px var(--body);text-anchor:middle}
+.d-sub{fill:var(--muted);font:500 10.5px var(--body);text-anchor:middle}
+.d-lbl{font:600 10.5px var(--body);text-anchor:middle}
+.flow{fill:none;stroke-width:2;stroke-dasharray:5 5;animation:flow 1.2s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-20}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}}
+.diagram p{margin-top:10px;font-size:14px;color:var(--muted)}
+
+/* steps, trust, safety */
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--accent);font:600 12px var(--display)}
+.facts{margin:0;display:flex;flex-direction:column}
+.facts>div{padding:14px 0;border-top:1px solid var(--line)}
+.facts dt{font-weight:600}
+.facts dd{margin:4px 0 0;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted)}
+.rules{list-style:none;margin:0;padding:0}
+.rules li{padding:12px 0;border-top:1px solid var(--line)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><circle cx="4" cy="17" r="3.5" fill="var(--am)"/><circle cx="26" cy="17" r="3.5" fill="var(--mm2)"/><path d="M4 17 Q15 -4 26 17" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
+      <span>Item Bridge</span>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" id="lang-ru" class="on" aria-pressed="true">RU</button>
+      <button type="button" id="lang-en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow"><span class="dot am"></span>Adopt Me <span>↔</span> <span class="dot mm"></span>Murder Mystery 2</div>
+    <h1 data-i="h1">Обмен предметами между играми</h1>
+    <p class="lead" data-i="sub">Отдай питомцев из Adopt Me и получи нож из MM2, или наоборот. Без денег и комиссий: предмет меняется на предмет.</p>
+    <div class="actions"><a class="btn primary" href="#request" data-i="cta">Создать заявку</a></div>
+
+    <div class="panel diagram">
+      <svg viewBox="0 0 360 150" role="img" aria-labelledby="dg-t">
+        <title id="dg-t">Item Bridge</title>
+        <defs>
+          <marker id="ah-am" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--am)"/></marker>
+          <marker id="ah-mm" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--mm2)"/></marker>
+        </defs>
+        <rect class="d-box" x="4" y="30" width="80" height="90" rx="12"/>
+        <text class="d-title" x="44" y="72" style="fill:var(--am)">Adopt Me</text>
+        <text class="d-sub" x="44" y="90" data-i="nodeA">Игрок A</text>
+        <rect class="d-box c" x="140" y="42" width="80" height="66" rx="12"/>
+        <text class="d-title" x="180" y="80" data-i="bridge">Мост</text>
+        <rect class="d-box" x="276" y="30" width="80" height="90" rx="12"/>
+        <text class="d-title" x="316" y="72" style="fill:var(--mm2)">MM2</text>
+        <text class="d-sub" x="316" y="90" data-i="nodeB">Игрок B</text>
+
+        <text class="d-lbl" x="112" y="52" style="fill:var(--am)" data-i="dPets">питомцы</text>
+        <path class="flow" d="M88 62 L134 62" style="stroke:var(--am)" marker-end="url(#ah-am)"/>
+        <text class="d-lbl" x="248" y="52" style="fill:var(--am)" data-i="dPets">питомцы</text>
+        <path class="flow" d="M224 62 L270 62" style="stroke:var(--am)" marker-end="url(#ah-am)"/>
+
+        <path class="flow" d="M134 100 L88 100" style="stroke:var(--mm2)" marker-end="url(#ah-mm)"/>
+        <text class="d-lbl" x="112" y="118" style="fill:var(--mm2)" data-i="dKnife">нож</text>
+        <path class="flow" d="M270 100 L224 100" style="stroke:var(--mm2)" marker-end="url(#ah-mm)"/>
+        <text class="d-lbl" x="248" y="118" style="fill:var(--mm2)" data-i="dKnife">нож</text>
+      </svg>
+      <p data-i="diagCap">Обе стороны сдают предметы мосту. Когда оба набора на месте, мост передаёт каждому его часть.</p>
+    </div>
+  </section>
+
+  <section id="request">
+    <h2 data-i="reqH">Заявка на обмен</h2>
+    <div class="panel form">
+      <fieldset>
+        <legend data-i="dirLegend">Что на что меняем</legend>
+        <div class="dirs">
+          <label class="dir"><input type="radio" name="dir" id="dir-am" value="am" checked><span class="dir-body"><b>Adopt Me → MM2</b><span data-i="dirAmSub">Отдаю питомцев, хочу оружие</span></span></label>
+          <label class="dir"><input type="radio" name="dir" id="dir-mm" value="mm"><span class="dir-body"><b>MM2 → Adopt Me</b><span data-i="dirMmSub">Отдаю оружие, хочу питомцев</span></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i="giveLegend">Отдаю</span><span class="tag g-am" id="tag-give">Adopt Me</span></legend>
+        <div class="list" id="give-list"></div>
+        <button type="button" class="btn small" id="add-give" data-i="addItem">Добавить предмет</button>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-i="wantLegend">Хочу получить</span><span class="tag g-mm" id="tag-want">MM2</span></legend>
+        <div class="list" id="want-list"></div>
+        <button type="button" class="btn small" id="add-want" data-i="addItem">Добавить предмет</button>
+      </fieldset>
+
+      <div>
+        <label class="lbl" for="nick" data-i="nickLabel">Ник в Roblox</label>
+        <input type="text" id="nick" maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ник без @" data-i-ph="nickPh">
+        <p class="hint" data-i="nickHint">Только ник. Пароль, cookie и коды вводить не нужно.</p>
+      </div>
+
+      <label class="check" for="test"><input type="checkbox" id="test"><span data-i="testLabel">Начать с тестового обмена на одном небольшом предмете</span></label>
+
+      <div>
+        <label class="lbl" for="note" data-i="noteLabel">Комментарий (необязательно)</label>
+        <textarea id="note" rows="2" maxlength="300" placeholder="Что важно знать второй стороне" data-i-ph="notePh"></textarea>
+      </div>
+
+      <div>
+        <label class="lbl" for="out" data-i="outLabel">Текст заявки</label>
+        <textarea id="out" readonly rows="8"></textarea>
+      </div>
+
+      <div class="btns">
+        <a class="btn primary" id="tg" target="_blank" rel="noopener noreferrer" href="#" data-i="openTg">Открыть Telegram</a>
+        <button type="button" class="btn" id="copy" data-i="copy">Скопировать</button>
+      </div>
+      <p class="hint" id="tg-note" hidden data-i="tgPending">Контакт в Telegram скоро появится здесь. Пока скопируй заявку.</p>
+      <p class="hint" id="send-hint" data-i="sendHint">Нажми «Открыть Telegram» и отправь сообщение. Если текст не подставился, вставь скопированную заявку.</p>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-i="howH">Как проходит обмен</h2>
+    <ol class="steps">
+      <li data-i="s1">Заполни заявку выше и отправь её в Telegram.</li>
+      <li data-i="s2">Мост подбирает вторую сторону и пишет вам обоим, что именно меняется.</li>
+      <li data-i="s3">Ты отправляешь свои предметы мосту (Roblox: Kirill_Gamer8) обычным трейдом в игре. Вторая сторона делает то же самое в своей игре.</li>
+      <li data-i="s4">Когда оба набора у моста, он проверяет их и отправляет каждому его часть.</li>
+      <li data-i="s5">Приходит скриншот. Если всё прошло нормально, можно оставить отзыв.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 data-i="trustH">Доверие</h2>
+    <p class="muted" data-i="trustSub">Новым участникам нужны гарантии. Вот что встроено в процесс.</p>
+    <dl class="facts">
+      <div><dt data-i="t1h">Можно начать с теста</dt><dd data-i="t1d">Сомневаешься? Отметь в заявке тестовый обмен: сначала меняем один небольшой предмет, и только потом остальное.</dd></div>
+      <div><dt data-i="t2h">Ничего не уходит наполовину</dt><dd data-i="t2d">Предметы не пересылаются дальше, пока оба набора не у моста. Если пара не нашлась или кто-то передумал, предметы возвращаются владельцу.</dd></div>
+      <div><dt data-i="t3h">Скриншоты на каждом шаге</dt><dd data-i="t3d">Получение и отправка подтверждаются в чате, чтобы ты видел, где сейчас твои предметы.</dd></div>
+      <div><dt data-i="t4h">Только предмет за предмет</dt><dd data-i="t4d">Деньги не нужны и не принимаются. Комиссии нет.</dd></div>
+    </dl>
+    <h2 data-i="revH">Отзывы</h2>
+    <div class="empty" data-i="revEmpty">Пока отзывов нет: проект только запускается. Они появятся здесь после первых завершённых обменов.</div>
+  </section>
+
+  <section>
+    <h2 data-i="safeH">Безопасность</h2>
+    <ul class="rules">
+      <li data-i="sf0">Официальные аккаунты моста: Telegram @Kirill8949, Roblox Kirill_Gamer8. Любые другие ники это подделки.</li>
+      <li data-i="sf1">Мост никогда не просит пароль, cookie, код подтверждения или ссылку для входа. Если кто-то просит, это не мост.</li>
+      <li data-i="sf2">Все передачи идут через обычное окно трейда внутри игры.</li>
+      <li data-i="sf3">Правила Roblox и самих игр могут меняться. Участвуешь на свой риск.</li>
+      <li data-i="sf4">Если тебе нет 18 лет, обсуди обмен со взрослым.</li>
+    </ul>
+  </section>
+
+  <footer data-i="foot">Item Bridge — независимый проект. Не связан с Roblox, Adopt Me и Murder Mystery 2. Названия принадлежат их владельцам.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Telegram username without @. Leave empty until the owner's contact is known.
+  var TG_USER = "Kirill8949";
+  var MAX_ROWS = 12;
+  var STORE_KEY = "ib-v1";
+
+  var GAMES = { am: "Adopt Me", mm: "MM2" };
+  var KINDS = ["knife", "gun", "other"];
+  var RARITIES = ["godly", "chroma", "ancient", "vintage", "unique", "legendary", "rare", "other"];
+  var RAR = { godly: "Godly", chroma: "Chroma", ancient: "Ancient", vintage: "Vintage", unique: "Unique", legendary: "Legendary", rare: "Rare" };
+  var STAGES = ["normal", "neon", "mega"];
+
+  var T = {
+    ru: {
+      errGive: "Укажи, что отдаёшь",
+      errWant: "Укажи, что хочешь получить",
+      errNick: "Укажи ник в Roblox, от 3 до 20 символов",
+      copied: "Заявка скопирована. Вставь её в чат Telegram.",
+      copyManual: "Не удалось скопировать автоматически. Текст выделен, скопируй его вручную.",
+      tgOpened: "Открываю Telegram. Если текст не подставился, нажми «Скопировать» и вставь заявку.",
+      nameAria: "Название предмета",
+      qtyAria: "Количество",
+      rmAria: "Убрать предмет",
+      stageAria: "Стадия питомца",
+      kindAria: "Тип оружия",
+      rarAria: "Редкость",
+      phAm: "Например, Shadow Dragon",
+      phMm: "Например, Harvester",
+      stage_normal: "Обычный",
+      stage_neon: "Neon",
+      stage_mega: "Mega Neon",
+      kind_knife: "Нож",
+      kind_gun: "Пистолет",
+      kind_other: "Другое",
+      rarity_other: "Другая",
+      msgTitle: "Заявка на обмен · Item Bridge",
+      msgGive: "Отдаю",
+      msgWant: "Хочу получить",
+      msgNick: "Ник в Roblox",
+      msgTest: "Хочу начать с тестового обмена на одном небольшом предмете.",
+      msgNote: "Комментарий"
+    },
+    en: {
+      h1: "Trade items between games",
+      sub: "Hand over pets from Adopt Me and get a knife in MM2, or the other way round. No money, no fees: item for item.",
+      cta: "Create a request",
+      diagCap: "Both sides hand their items to the bridge. Once both sets have arrived, the bridge passes each person what they asked for.",
+      nodeA: "Player A",
+      nodeB: "Player B",
+      bridge: "Bridge",
+      dPets: "pets",
+      dKnife: "knife",
+      reqH: "Trade request",
+      dirLegend: "What for what",
+      dirAmSub: "Give pets, get a weapon",
+      dirMmSub: "Give a weapon, get pets",
+      giveLegend: "I give",
+      wantLegend: "I want",
+      addItem: "Add item",
+      nickLabel: "Roblox username",
+      nickPh: "Username without @",
+      nickHint: "Username only. Never enter a password, cookie or codes.",
+      testLabel: "Start with a test trade of one small item",
+      noteLabel: "Comment (optional)",
+      notePh: "Anything the other side should know",
+      outLabel: "Request text",
+      openTg: "Open Telegram",
+      copy: "Copy",
+      tgPending: "The Telegram contact will appear here soon. For now, copy the request.",
+      sendHint: "Tap Open Telegram and send the message. If the text did not fill in, paste the copied request.",
+      howH: "How a trade works",
+      s1: "Fill in the request above and send it on Telegram.",
+      s2: "The bridge finds the other side and messages you both with exactly what is being traded.",
+      s3: "You send your items to the bridge (Roblox: Kirill_Gamer8) with a normal in-game trade. The other side does the same in their game.",
+      s4: "Once both sets are with the bridge, it checks them and sends each person their part.",
+      s5: "You get a screenshot. If everything went fine, you can leave a review.",
+      trustH: "Trust",
+      trustSub: "New people need guarantees. Here is what the process builds in.",
+      t1h: "You can start with a test",
+      t1d: "Not sure yet? Tick the test trade in the request: one small item goes first, and the rest only after that.",
+      t2h: "Nothing is sent halfway",
+      t2d: "Items are not passed on until both sets are with the bridge. If no match is found or someone backs out, the items go back to their owner.",
+      t3h: "Screenshots at every step",
+      t3d: "Receiving and sending are confirmed in the chat, so you can see where your items are.",
+      t4h: "Item for item only",
+      t4d: "No money is needed or accepted. There is no fee.",
+      revH: "Reviews",
+      revEmpty: "No reviews yet: the project is just starting. They will appear here after the first completed trades.",
+      safeH: "Safety",
+      sf0: "Official bridge accounts: Telegram @Kirill8949, Roblox Kirill_Gamer8. Any other names are fakes.",
+      sf1: "The bridge never asks for a password, cookie, verification code or login link. If someone does, it is not the bridge.",
+      sf2: "All handovers go through the normal in-game trade window.",
+      sf3: "The rules of Roblox and the games can change. You take part at your own risk.",
+      sf4: "If you are under 18, talk the trade over with an adult.",
+      foot: "Item Bridge is an independent project. Not affiliated with Roblox, Adopt Me or Murder Mystery 2. Names belong to their owners.",
+      errGive: "Enter what you give",
+      errWant: "Enter what you want",
+      errNick: "Enter your Roblox username, 3 to 20 characters",
+      copied: "Request copied. Paste it into the Telegram chat.",
+      copyManual: "Could not copy automatically. The text is selected, copy it by hand.",
+      tgOpened: "Opening Telegram. If the text did not fill in, tap Copy and paste the request.",
+      nameAria: "Item name",
+      qtyAria: "Quantity",
+      rmAria: "Remove item",
+      stageAria: "Pet stage",
+      kindAria: "Weapon type",
+      rarAria: "Rarity",
+      phAm: "For example, Shadow Dragon",
+      phMm: "For example, Harvester",
+      stage_normal: "Normal",
+      stage_neon: "Neon",
+      stage_mega: "Mega Neon",
+      kind_knife: "Knife",
+      kind_gun: "Gun",
+      kind_other: "Other",
+      rarity_other: "Other",
+      msgTitle: "Trade request · Item Bridge",
+      msgGive: "I give",
+      msgWant: "I want",
+      msgNick: "Roblox username",
+      msgTest: "I would like to start with a test trade of one small item.",
+      msgNote: "Comment"
+    }
+  };
+
+  var lang = "ru";
+
+  function t(k) {
+    var d = T[lang];
+    if (d && d[k] !== undefined) return d[k];
+    return T.en[k] !== undefined ? T.en[k] : k;
+  }
+
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } }
+
+  function $(id) { return document.getElementById(id); }
+
+  function h(tag, p, kids) {
+    var n = document.createElement(tag);
+    if (p) {
+      Object.keys(p).forEach(function (k) {
+        var v = p[k];
+        if (k === "text") n.textContent = v;
+        else if (k === "value" || k === "checked" || k === "disabled") n[k] = v;
+        else n.setAttribute(k, v);
+      });
+    }
+    (kids || []).forEach(function (c) { n.appendChild(c); });
+    return n;
+  }
+
+  function newRow() {
+    return { name: "", qty: 1, stage: "normal", fly: false, ride: false, kind: "knife", rarity: "godly" };
+  }
+
+  function cleanRow(r) {
+    var b = newRow();
+    if (!r || typeof r !== "object") return b;
+    b.name = typeof r.name === "string" ? r.name.slice(0, 60) : "";
+    var q = parseInt(r.qty, 10);
+    b.qty = q > 0 && q <= 99 ? q : 1;
+    if (STAGES.indexOf(r.stage) >= 0) b.stage = r.stage;
+    b.fly = !!r.fly;
+    b.ride = !!r.ride;
+    if (KINDS.indexOf(r.kind) >= 0) b.kind = r.kind;
+    if (RARITIES.indexOf(r.rarity) >= 0) b.rarity = r.rarity;
+    return b;
+  }
+
+  var state = { dir: "am", give: [newRow()], want: [newRow()], nick: "", note: "", test: false };
+
+  (function restore() {
+    var raw = load(STORE_KEY);
+    if (!raw) return;
+    try {
+      var d = JSON.parse(raw);
+      if (d.lang === "en" || d.lang === "ru") lang = d.lang;
+      if (d.dir === "am" || d.dir === "mm") state.dir = d.dir;
+      ["give", "want"].forEach(function (s) {
+        if (Array.isArray(d[s]) && d[s].length) state[s] = d[s].slice(0, MAX_ROWS).map(cleanRow);
+      });
+      if (typeof d.nick === "string") state.nick = d.nick.slice(0, 30);
+      if (typeof d.note === "string") state.note = d.note.slice(0, 300);
+      state.test = !!d.test;
+    } catch (e) { /* ignore a broken draft */ }
+  })();
+
+  function persist() {
+    save(STORE_KEY, JSON.stringify({
+      lang: lang, dir: state.dir, give: state.give, want: state.want,
+      nick: state.nick, note: state.note, test: state.test
+    }));
+  }
+
+  function giveGame() { return state.dir === "am" ? "am" : "mm"; }
+  function wantGame() { return state.dir === "am" ? "mm" : "am"; }
+
+  var out = $("out"), tg = $("tg"), copyBtn = $("copy"), statusEl = $("status");
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text || "";
+    statusEl.className = "status" + (kind ? " " + kind : "");
+  }
+
+  var saveTimer = null;
+  function changed() {
+    updateOutput();
+    if (statusEl.classList.contains("err")) setStatus("");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(persist, 300);
+  }
+
+  /* ---------- message ---------- */
+  function named(list) {
+    return list.filter(function (it) { return it.name.trim().length > 0; });
+  }
+
+  function itemLine(it, game) {
+    var tags = [];
+    if (game === "am") {
+      if (it.stage === "neon") tags.push("Neon");
+      if (it.stage === "mega") tags.push("Mega Neon");
+      if (it.fly) tags.push("Fly");
+      if (it.ride) tags.push("Ride");
+    } else {
+      tags.push(t("kind_" + it.kind));
+      tags.push(it.rarity === "other" ? t("rarity_other") : RAR[it.rarity]);
+    }
+    return "• " + it.name.trim() + " ×" + it.qty + (tags.length ? " · " + tags.join(", ") : "");
+  }
+
+  function pushItems(lines, list, game) {
+    var items = named(list);
+    if (!items.length) { lines.push("• —"); return; }
+    items.forEach(function (it) { lines.push(itemLine(it, game)); });
+  }
+
+  function cleanNick() { return state.nick.replace(/^@+/, "").trim(); }
+
+  function buildMessage() {
+    var g = giveGame(), w = wantGame();
+    var lines = [t("msgTitle")];
+    lines.push(t("msgGive") + " (" + GAMES[g] + "):");
+    pushItems(lines, state.give, g);
+    lines.push(t("msgWant") + " (" + GAMES[w] + "):");
+    pushItems(lines, state.want, w);
+    lines.push(t("msgNick") + ": " + (cleanNick() || "—"));
+    if (state.test) lines.push(t("msgTest"));
+    if (state.note.trim()) lines.push(t("msgNote") + ": " + state.note.trim());
+    return lines.join("\n");
+  }
+
+  function updateOutput() {
+    var msg = buildMessage();
+    out.value = msg;
+    out.rows = Math.min(16, Math.max(6, msg.split("\n").length + 1));
+    if (TG_USER) tg.href = "https://t.me/" + TG_USER + "?text=" + encodeURIComponent(msg);
+  }
+
+  /* ---------- rows ---------- */
+  function option(value, label) { return h("option", { value: value, text: label }); }
+
+  function buildRow(side, i, it, game) {
+    var id = side + "-" + i;
+
+    var name = h("input", {
+      id: id + "-name", type: "text", maxlength: "60", autocomplete: "off", spellcheck: "false",
+      placeholder: t(game === "am" ? "phAm" : "phMm"), "aria-label": t("nameAria"), value: it.name
+    });
+    name.addEventListener("input", function () { it.name = name.value; changed(); });
+
+    var qty = h("input", {
+      id: id + "-qty", type: "number", inputmode: "numeric", min: "1", max: "99",
+      "aria-label": t("qtyAria"), value: String(it.qty)
+    });
+    qty.addEventListener("input", function () {
+      var q = parseInt(qty.value, 10);
+      it.qty = q > 0 && q <= 99 ? q : 1;
+      changed();
+    });
+    qty.addEventListener("blur", function () { qty.value = String(it.qty); });
+
+    var rm = h("button", { id: id + "-rm", type: "button", class: "icon-btn", "aria-label": t("rmAria"), text: "×" });
+    rm.disabled = state[side].length <= 1;
+    rm.addEventListener("click", function () {
+      state[side].splice(i, 1);
+      renderList(side);
+      changed();
+    });
+
+    var extra = h("div", { class: "item-extra" });
+    if (game === "am") {
+      var stage = h("select", { id: id + "-stage", "aria-label": t("stageAria") },
+        STAGES.map(function (s) { return option(s, t("stage_" + s)); }));
+      stage.value = it.stage;
+      stage.addEventListener("change", function () { it.stage = stage.value; changed(); });
+      extra.appendChild(stage);
+      [["fly", "Fly"], ["ride", "Ride"]].forEach(function (pair) {
+        var cb = h("input", { id: id + "-" + pair[0], type: "checkbox" });
+        cb.checked = !!it[pair[0]];
+        cb.addEventListener("change", function () { it[pair[0]] = cb.checked; changed(); });
+        extra.appendChild(h("label", { class: "chip", for: id + "-" + pair[0] }, [cb, h("span", { text: pair[1] })]));
+      });
+    } else {
+      var kind = h("select", { id: id + "-kind", "aria-label": t("kindAria") },
+        KINDS.map(function (k) { return option(k, t("kind_" + k)); }));
+      kind.value = it.kind;
+      kind.addEventListener("change", function () { it.kind = kind.value; changed(); });
+      var rar = h("select", { id: id + "-rarity", "aria-label": t("rarAria") },
+        RARITIES.map(function (r) { return option(r, r === "other" ? t("rarity_other") : RAR[r]); }));
+      rar.value = it.rarity;
+      rar.addEventListener("change", function () { it.rarity = rar.value; changed(); });
+      extra.appendChild(kind);
+      extra.appendChild(rar);
+    }
+
+    return h("div", { class: "item" }, [h("div", { class: "item-main" }, [name, qty, rm]), extra]);
+  }
+
+  function renderList(side) {
+    var host = $(side + "-list");
+    var game = side === "give" ? giveGame() : wantGame();
+    host.textContent = "";
+    state[side].forEach(function (it, i) { host.appendChild(buildRow(side, i, it, game)); });
+    $("add-" + side).disabled = state[side].length >= MAX_ROWS;
+    var tag = $("tag-" + side);
+    tag.textContent = GAMES[game];
+    tag.className = "tag g-" + game;
+  }
+
+  function renderLists() { renderList("give"); renderList("want"); }
+
+  ["give", "want"].forEach(function (side) {
+    $("add-" + side).addEventListener("click", function () {
+      if (state[side].length >= MAX_ROWS) return;
+      state[side].push(newRow());
+      renderList(side);
+      changed();
+      var f = $(side + "-" + (state[side].length - 1) + "-name");
+      if (f) f.focus();
+    });
+  });
+
+  /* ---------- static fields ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll("input[name=dir]"), function (r) {
+    r.addEventListener("change", function () {
+      if (!r.checked) return;
+      state.dir = r.value;
+      renderLists();
+      changed();
+    });
+  });
+
+  $("nick").addEventListener("input", function () { state.nick = this.value; this.removeAttribute("aria-invalid"); changed(); });
+  $("note").addEventListener("input", function () { state.note = this.value; changed(); });
+  $("test").addEventListener("change", function () { state.test = this.checked; changed(); });
+
+  /* ---------- validation, copy, telegram ---------- */
+  function firstEmpty(side) {
+    for (var i = 0; i < state[side].length; i++) {
+      if (!state[side][i].name.trim()) return i;
+    }
+    return 0;
+  }
+
+  function validate() {
+    if (!named(state.give).length) return { key: "errGive", focus: "give-" + firstEmpty("give") + "-name" };
+    if (!named(state.want).length) return { key: "errWant", focus: "want-" + firstEmpty("want") + "-name" };
+    var n = cleanNick();
+    if (n.length < 3 || n.length > 20) return { key: "errNick", focus: "nick", invalid: true };
+    return null;
+  }
+
+  function showErr(err) {
+    setStatus(t(err.key), "err");
+    var f = $(err.focus);
+    if (err.invalid && f) f.setAttribute("aria-invalid", "true");
+    if (f) f.focus();
+  }
+
+  copyBtn.addEventListener("click", function () {
+    var err = validate();
+    if (err) { showErr(err); return; }
+    function fallback() {
+      out.focus();
+      out.select();
+      setStatus(t("copyManual"), "warn");
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(out.value).then(function () {
+        setStatus(t("copied"), "ok");
+      }, fallback);
+    } else {
+      fallback();
+    }
+  });
+
+  tg.addEventListener("click", function (e) {
+    var err = validate();
+    if (err) { e.preventDefault(); showErr(err); return; }
+    setStatus(t("tgOpened"), "ok");
+  });
+
+  /* ---------- language ---------- */
+  function applyLang() {
+    document.documentElement.setAttribute("lang", lang);
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i]"), function (el) {
+      if (el.getAttribute("data-ru") === null) el.setAttribute("data-ru", el.textContent);
+      el.textContent = lang === "en" ? t(el.getAttribute("data-i")) : el.getAttribute("data-ru");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-i-ph]"), function (el) {
+      if (el.getAttribute("data-ru-ph") === null) el.setAttribute("data-ru-ph", el.getAttribute("placeholder") || "");
+      el.setAttribute("placeholder", lang === "en" ? t(el.getAttribute("data-i-ph")) : el.getAttribute("data-ru-ph"));
+    });
+    ["ru", "en"].forEach(function (l) {
+      var b = $("lang-" + l);
+      b.classList.toggle("on", l === lang);
+      b.setAttribute("aria-pressed", l === lang ? "true" : "false");
+    });
+    renderLists();
+    updateOutput();
+  }
+
+  ["ru", "en"].forEach(function (l) {
+    $("lang-" + l).addEventListener("click", function () {
+      if (lang === l) return;
+      lang = l;
+      setStatus("");
+      applyLang();
+      persist();
+    });
+  });
+
+  /* ---------- init ---------- */
+  $("dir-" + state.dir).checked = true;
+  $("nick").value = state.nick;
+  $("note").value = state.note;
+  $("test").checked = state.test;
+
+  if (!TG_USER) {
+    tg.hidden = true;
+    $("tg-note").hidden = false;
+    $("send-hint").hidden = true;
+    copyBtn.className = "btn primary";
+  }
+
+  applyLang();
+})();
+</script>
+
+</body></html>
