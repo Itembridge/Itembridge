@@ -1,0 +1,1162 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c0e13">
+<title>Item Bridge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: one phone-width column. Header, nav tabs, then one routed view: board, new offer, propose, deal room, my stuff. */
+:root{
+  --bg:#0c0e13;
+  --surface:#141822;
+  --surface-2:#1b2130;
+  --line:#272f41;
+  --fg:#e9ecf3;
+  --muted:#9099ae;
+  --accent:#8fb0ff;
+  --accent-soft:rgba(143,176,255,.14);
+  --accent-ink:#0b1226;
+  --am:#f7a8d1;
+  --mm2:#ff7a7a;
+  --ok:#78dca8;
+  --warn:#ffd27a;
+  --err:#ff8e8e;
+  --display:"Unbounded","Inter",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--fg);
+  font:400 16px/1.55 var(--body);
+  padding-block:20px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.view{display:flex;flex-direction:column;gap:22px;min-width:0}
+section,fieldset{min-width:0}
+section{display:flex;flex-direction:column;gap:14px}
+h1,h2,h3,p{margin:0}
+h1{font:600 clamp(24px,6.6vw,34px)/1.18 var(--display);letter-spacing:-.01em;text-wrap:balance}
+h2{font:600 17px/1.3 var(--display);text-wrap:balance}
+h3{font:600 15px/1.3 var(--body)}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+
+/* header + nav */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font:600 15px var(--display)}
+.lang{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.lang button{font:600 13px var(--body);color:var(--muted);background:transparent;border:0;padding:8px 14px;min-height:36px;cursor:pointer}
+.lang button.on{background:var(--surface-2);color:var(--fg)}
+.nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.nav a{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);color:var(--muted);text-decoration:none;font:500 14px var(--body)}
+.nav a.on{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:600 12px/20px var(--body);text-align:center}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font:600 15px var(--body);text-decoration:none;cursor:pointer;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--err)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{min-height:40px;padding:0 14px;font-size:14px;align-self:flex-start}
+input[type=text],input[type=number],select,textarea{
+  width:100%;font:400 16px/1.3 var(--body);color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-width:0;
+}
+input::placeholder,textarea::placeholder{color:#677089}
+textarea{resize:vertical}
+label.lbl{display:block;font:600 14px var(--body);margin-bottom:6px}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.form{display:flex;flex-direction:column;gap:22px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+legend{padding:0;margin-bottom:10px;font:600 14px var(--body);display:flex;align-items:center;gap:8px}
+.tag{font:600 12px var(--body);padding:3px 9px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.g-am{color:var(--am)}.g-mm{color:var(--mm2)}
+.pill{font:600 12px var(--body);padding:3px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:rgba(120,220,168,.14);color:var(--ok)}
+.pill.warn{background:rgba(255,210,122,.14);color:var(--warn)}
+.pill.err{background:rgba(255,142,142,.14);color:var(--err)}
+
+/* direction cards */
+.dirs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dir{position:relative;display:block}
+.dir input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.dir-body{display:flex;flex-direction:column;gap:4px;height:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg)}
+.dir-body b{font:600 15px var(--body)}
+.dir-body span{font-size:13px;color:var(--muted)}
+.dir input:checked+.dir-body{border-color:var(--accent);background:var(--accent-soft)}
+.dir input:focus-visible+.dir-body{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:360px){.dirs{grid-template-columns:1fr}}
+
+/* item rows */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.item-main{display:grid;grid-template-columns:minmax(0,1fr) 64px 44px;gap:8px}
+.item-extra{display:flex;flex-wrap:wrap;gap:8px}
+.item-extra select{width:auto;flex:1 1 120px}
+.icon-btn{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:400 22px/1 var(--body);cursor:pointer}
+.icon-btn:disabled{opacity:.35;cursor:default}
+.chip{position:relative;display:inline-flex}
+.chip input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.chip span{padding:10px 14px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font:500 14px var(--body);background:var(--bg)}
+.chip input:checked+span{border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}
+.chip input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font:500 14px var(--body);cursor:pointer}
+.filters button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--fg)}
+
+/* offers + deal */
+.offer{display:flex;flex-direction:column;gap:12px}
+.offer-head,.card-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.offer-head .grow{flex:1}
+.lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.lines li{padding-left:14px;position:relative;overflow-wrap:anywhere}
+.lines li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.swap{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.swap{grid-template-columns:1fr}}
+.cap{font:600 12px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.cols{grid-template-columns:1fr}}
+.card{display:flex;flex-direction:column;gap:12px}
+.msgbox{font:400 13px/1.55 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.chat{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto;padding:2px}
+.bubble{max-width:86%;padding:8px 12px;border-radius:12px;background:var(--surface-2);align-self:flex-start;overflow-wrap:anywhere}
+.bubble.me{align-self:flex-end;background:var(--accent-soft)}
+.bubble small{display:block;color:var(--muted);font-size:12px}
+.chatform{display:flex;gap:8px}
+.chatform input{flex:1}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted)}
+.status{min-height:22px;font-size:14px}
+.status.ok{color:var(--ok)}.status.warn{color:var(--warn)}.status.err{color:var(--err)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));max-width:min(92vw,520px);padding:12px 16px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:14px;z-index:20}
+#toast.ok{border-color:var(--ok)}#toast.err{border-color:var(--err)}
+
+/* info */
+details.info{border-top:1px solid var(--line);padding:14px 0}
+details.info summary{cursor:pointer;font:600 15px var(--body);list-style:none}
+details.info summary::-webkit-details-marker{display:none}
+details.info summary::after{content:"+";float:right;color:var(--muted)}
+details.info[open] summary::after{content:"\2212"}
+details.info .body{margin-top:12px;display:flex;flex-direction:column;gap:12px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);color:var(--accent);font:600 12px var(--display)}
+.facts{margin:0;display:flex;flex-direction:column}
+.facts>div{padding:12px 0;border-top:1px solid var(--line)}
+.facts dt{font-weight:600}
+.facts dd{margin:4px 0 0;color:var(--muted)}
+.rules{list-style:none;margin:0;padding:0}
+.rules li{padding:12px 0;border-top:1px solid var(--line)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<noscript><p style="padding:16px">Для работы сайта нужен JavaScript. JavaScript is required.</p></noscript>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ======== settings ======== */
+  // Paste the Firebase web app config object here (see the setup steps).
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCQa5tOeN0ktyxaNBhcCKCKyUrhy_jlZms",
+    authDomain: "itembridge-690a0.firebaseapp.com",
+    projectId: "itembridge-690a0",
+    storageBucket: "itembridge-690a0.firebasestorage.app",
+    messagingSenderId: "641901751196",
+    appId: "1:641901751196:web:0264693261696d5bb27659"
+  };
+  var BRIDGE_TG = "Kirill8949";
+  var BRIDGE_RBX = "Kirill_Gamer8";
+  var TTL_DAYS = 7;
+  var MAX_ROWS = 12;
+
+  var GAMES = { am: "Adopt Me", mm: "MM2" };
+  var KINDS = ["knife", "gun", "other"];
+  var KIND_EN = { knife: "Knife", gun: "Gun", other: "Other" };
+  var RARITIES = ["godly", "chroma", "ancient", "vintage", "unique", "legendary", "rare", "other"];
+  var RAR_EN = { godly: "Godly", chroma: "Chroma", ancient: "Ancient", vintage: "Vintage", unique: "Unique", legendary: "Legendary", rare: "Rare", other: "Other" };
+  var STAGES = ["normal", "neon", "mega"];
+
+  /* ======== texts ======== */
+  var D = {
+    ru: {
+      navBoard: "Доска", navNew: "Создать", navMy: "Мои",
+      h1: "Обмен предметами между играми",
+      sub: "Выложи, что отдаёшь, и найди игрока из другой игры. Вы договариваетесь в комнате сделки, а мост передаёт предметы. Без денег и комиссий.",
+      boardH: "Предложения", filterAll: "Все", filterAm: "Отдают Adopt Me", filterMm: "Отдают MM2",
+      empty: "Пока предложений нет. Создай первое.", loading: "Загрузка…",
+      dirLabel_am: "Отдаёт Adopt Me, хочет MM2", dirLabel_mm: "Отдаёт MM2, хочет Adopt Me",
+      giveWord: "Отдаёт", wantWord: "Хочет", yourOffer: "Твоё предложение",
+      propose: "Предложить обмен", closeOffer: "Снять с доски", deleteOffer: "Удалить", closedTag: "Снято",
+      agoNow: "только что", agoMin: "мин назад", agoHour: "ч назад", agoDay: "д назад",
+      newH: "Новое предложение", dirLegend: "Что на что меняем",
+      dirAmSub: "Отдаю питомцев, хочу оружие", dirMmSub: "Отдаю оружие, хочу питомцев",
+      giveLegend: "Отдаю", wantLegend: "Хочу получить", addItem: "Добавить предмет",
+      nickLabel: "Ник в Roblox", nickPh: "Ник без @", nickHint: "Только ник. Пароль, cookie и коды вводить не нужно.",
+      noteLabel: "Комментарий (необязательно)", notePh: "Что важно знать второму игроку",
+      publish: "Опубликовать", published: "Предложение опубликовано",
+      errGive: "Укажи, что отдаёшь", errWant: "Укажи, что хочешь получить",
+      errNick: "Укажи ник в Roblox, от 3 до 20 символов",
+      errGeneric: "Не получилось. Проверь интернет и попробуй ещё раз.",
+      errPerm: "Нет доступа. Обнови страницу и попробуй снова.",
+      errAuth: "Не удалось войти. Попробуй позже.",
+      errSetup: "Сайт ещё не подключён к базе данных.",
+      errNoLib: "Не загрузились скрипты. Проверь интернет и обнови страницу.",
+      nameAria: "Название предмета", qtyAria: "Количество", rmAria: "Убрать предмет",
+      stageAria: "Стадия питомца", kindAria: "Тип оружия", rarAria: "Редкость",
+      phAm: "Например, Shadow Dragon", phMm: "Например, Harvester",
+      stage_normal: "Обычный", stage_neon: "Neon", stage_mega: "Mega Neon",
+      kind_knife: "Нож", kind_gun: "Пистолет", kind_other: "Другое", rarity_other: "Другая",
+      proposeH: "Предложить обмен", offerFrom: "Предложение игрока", yourItems: "Что отдаёшь ты",
+      yourItemsHint: "Мы подставили то, что хочет игрок. Поменяй список под себя.",
+      sendProposal: "Отправить предложение", offerGone: "Это предложение уже недоступно.", ownOffer: "Это твоё предложение, предложить обмен самому себе нельзя.",
+      dealH: "Комната сделки", st_open: "Договариваетесь", st_reported: "Мост уведомлён", st_cancelled: "Отменена",
+      you: "Вы", edit: "Изменить", saveItems: "Сохранить список", cancelEdit: "Отмена",
+      agreedPill: "согласен", thinkingPill: "ещё думает",
+      iAgree: "Согласен с обменом", iRevoke: "Отозвать согласие",
+      agreeHint: "Любое изменение списка сбрасывает согласие обоих игроков.",
+      saveFirst: "Сначала сохрани список.",
+      myContact: "Твой Telegram (необязательно)", contactPh: "@ник",
+      contactHint: "Второй игрок и мост смогут написать тебе.", theirContact: "Telegram второго игрока",
+      bothAgreed: "Вы договорились",
+      bothAgreedText: "Теперь сообщи мосту: он получит все детали. После этого оба отправляете свои предметы на Roblox-аккаунт моста обычным трейдом в игре.",
+      bridgeAcc: "Roblox-аккаунт моста",
+      reportBtn: "Сообщить мосту в Telegram", copyBtn: "Скопировать сообщение", copied: "Сообщение скопировано",
+      copyManual: "Не удалось скопировать автоматически. Выдели текст и скопируй вручную.",
+      cancelDeal: "Отменить сделку", cancelSure: "Точно отменить?", cancelledNote: "Сделка отменена. Предметы отправлять не нужно.",
+      reportedNote: "Мост уведомлён. Ждите сообщения от моста и ничего не отправляйте, пока он не напишет.",
+      chatH: "Чат", chatPh: "Сообщение", send: "Отправить", noMsgs: "Сообщений пока нет.",
+      notFound: "Сделка не найдена или у тебя нет к ней доступа.",
+      myH: "Мои предложения", myDealsH: "Мои сделки", noMyOffers: "У тебя нет предложений.", noMyDeals: "Сделок пока нет.",
+      openDeal: "Открыть", withWho: "с",
+      myNote: "Сделки и предложения привязаны к этому браузеру. Если очистить данные сайта, они пропадут.",
+      howH: "Как это работает",
+      s1: "Создай предложение: что отдаёшь и что хочешь. Или выбери чужое на доске.",
+      s2: "Откроется комната сделки. Оба видят предметы, пишете в чате и меняете списки, пока не договоритесь.",
+      s3: "Оба нажимают «Согласен». Любое изменение списка сбрасывает согласие.",
+      s4: "Нажмите «Сообщить мосту». Мост получит готовое сообщение со всеми деталями.",
+      s5: "Оба отправляете предметы мосту. Когда всё получено, мост передаёт каждому его часть.",
+      trustH: "Доверие",
+      t1h: "Согласие привязано к списку", t1d: "Если кто-то меняет предметы после согласия, согласие сбрасывается. Подменить предметы незаметно нельзя.",
+      t2h: "Можно начать с теста", t2d: "Договоритесь в комнате начать с одного небольшого предмета, а остальное передать потом.",
+      t3h: "Ничего не уходит наполовину", t3d: "Мост не передаёт предметы дальше, пока оба набора у него. Если кто-то передумал, предметы возвращаются владельцу.",
+      t4h: "Только предмет за предмет", t4d: "Деньги не нужны и не принимаются. Комиссии нет.",
+      revH: "Отзывы", revEmpty: "Пока отзывов нет: проект только запускается. Они появятся после первых завершённых обменов.",
+      safeH: "Безопасность",
+      sf0: "Официальные аккаунты моста: Telegram @Kirill8949, Roblox Kirill_Gamer8. Любые другие ники это подделки.",
+      sf1: "Мост никогда не просит пароль, cookie, код подтверждения или ссылку для входа. Если кто-то просит, это не мост.",
+      sf2: "Все передачи идут через обычное окно трейда внутри игры.",
+      sf3: "Правила Roblox и самих игр могут меняться. Участвуешь на свой риск.",
+      sf4: "Если тебе нет 18 лет, обсуди обмен со взрослым.",
+      foot: "Item Bridge — независимый проект. Не связан с Roblox, Adopt Me и Murder Mystery 2. Названия принадлежат их владельцам.",
+      bmTitle: "Сделка Item Bridge", bmPlayerA: "Игрок A", bmPlayerB: "Игрок B", bmGives: "Отдаёт",
+      bmFooter: "Оба игрока согласны. Готовы отправить предметы на Roblox: "
+    },
+    en: {
+      navBoard: "Board", navNew: "Create", navMy: "Mine",
+      h1: "Trade items between games",
+      sub: "Post what you give and find a player from the other game. You agree in a deal room, and the bridge passes the items. No money, no fees.",
+      boardH: "Offers", filterAll: "All", filterAm: "Give Adopt Me", filterMm: "Give MM2",
+      empty: "No offers yet. Create the first one.", loading: "Loading…",
+      dirLabel_am: "Gives Adopt Me, wants MM2", dirLabel_mm: "Gives MM2, wants Adopt Me",
+      giveWord: "Gives", wantWord: "Wants", yourOffer: "Your offer",
+      propose: "Propose a trade", closeOffer: "Take down", deleteOffer: "Delete", closedTag: "Closed",
+      agoNow: "just now", agoMin: "min ago", agoHour: "h ago", agoDay: "d ago",
+      newH: "New offer", dirLegend: "What for what",
+      dirAmSub: "Give pets, get a weapon", dirMmSub: "Give a weapon, get pets",
+      giveLegend: "I give", wantLegend: "I want", addItem: "Add item",
+      nickLabel: "Roblox username", nickPh: "Username without @", nickHint: "Username only. Never enter a password, cookie or codes.",
+      noteLabel: "Comment (optional)", notePh: "Anything the other player should know",
+      publish: "Publish", published: "Offer published",
+      errGive: "Enter what you give", errWant: "Enter what you want",
+      errNick: "Enter your Roblox username, 3 to 20 characters",
+      errGeneric: "Something went wrong. Check your connection and try again.",
+      errPerm: "No access. Refresh the page and try again.",
+      errAuth: "Could not sign in. Try again later.",
+      errSetup: "The site is not connected to its database yet.",
+      errNoLib: "Scripts failed to load. Check your connection and refresh.",
+      nameAria: "Item name", qtyAria: "Quantity", rmAria: "Remove item",
+      stageAria: "Pet stage", kindAria: "Weapon type", rarAria: "Rarity",
+      phAm: "For example, Shadow Dragon", phMm: "For example, Harvester",
+      stage_normal: "Normal", stage_neon: "Neon", stage_mega: "Mega Neon",
+      kind_knife: "Knife", kind_gun: "Gun", kind_other: "Other", rarity_other: "Other",
+      proposeH: "Propose a trade", offerFrom: "Offer from", yourItems: "What you give",
+      yourItemsHint: "We filled in what the player wants. Change the list to match yours.",
+      sendProposal: "Send proposal", offerGone: "This offer is no longer available.", ownOffer: "This is your own offer, you cannot propose a trade to yourself.",
+      dealH: "Deal room", st_open: "Negotiating", st_reported: "Bridge notified", st_cancelled: "Cancelled",
+      you: "You", edit: "Edit", saveItems: "Save list", cancelEdit: "Cancel",
+      agreedPill: "agreed", thinkingPill: "still thinking",
+      iAgree: "I agree to the trade", iRevoke: "Withdraw agreement",
+      agreeHint: "Any change to a list resets the agreement of both players.",
+      saveFirst: "Save your list first.",
+      myContact: "Your Telegram (optional)", contactPh: "@username",
+      contactHint: "The other player and the bridge can message you.", theirContact: "Other player's Telegram",
+      bothAgreed: "You have agreed",
+      bothAgreedText: "Now tell the bridge: it will get all the details. After that, both of you send your items to the bridge's Roblox account with a normal in-game trade.",
+      bridgeAcc: "Bridge Roblox account",
+      reportBtn: "Tell the bridge on Telegram", copyBtn: "Copy message", copied: "Message copied",
+      copyManual: "Could not copy automatically. Select the text and copy it by hand.",
+      cancelDeal: "Cancel deal", cancelSure: "Really cancel?", cancelledNote: "The deal is cancelled. Do not send any items.",
+      reportedNote: "The bridge is notified. Wait for its message and do not send anything until it writes.",
+      chatH: "Chat", chatPh: "Message", send: "Send", noMsgs: "No messages yet.",
+      notFound: "Deal not found, or you do not have access to it.",
+      myH: "My offers", myDealsH: "My deals", noMyOffers: "You have no offers.", noMyDeals: "No deals yet.",
+      openDeal: "Open", withWho: "with",
+      myNote: "Deals and offers are tied to this browser. Clearing site data removes them.",
+      howH: "How it works",
+      s1: "Create an offer: what you give and what you want. Or pick someone else's on the board.",
+      s2: "A deal room opens. Both of you see the items, chat and edit the lists until you agree.",
+      s3: "Both press Agree. Any change to a list resets the agreement.",
+      s4: "Press Tell the bridge. The bridge gets a ready message with all details.",
+      s5: "Both of you send items to the bridge. Once everything has arrived, the bridge passes each person their part.",
+      trustH: "Trust",
+      t1h: "Agreement is tied to the list", t1d: "If someone changes items after agreeing, the agreement resets. Items cannot be swapped quietly.",
+      t2h: "You can start with a test", t2d: "Agree in the room to start with one small item and send the rest later.",
+      t3h: "Nothing is sent halfway", t3d: "The bridge does not pass items on until both sets are with it. If someone backs out, items go back to their owner.",
+      t4h: "Item for item only", t4d: "No money is needed or accepted. There is no fee.",
+      revH: "Reviews", revEmpty: "No reviews yet: the project is just starting. They will appear after the first completed trades.",
+      safeH: "Safety",
+      sf0: "Official bridge accounts: Telegram @Kirill8949, Roblox Kirill_Gamer8. Any other names are fakes.",
+      sf1: "The bridge never asks for a password, cookie, verification code or login link. If someone does, it is not the bridge.",
+      sf2: "All handovers go through the normal in-game trade window.",
+      sf3: "The rules of Roblox and the games can change. You take part at your own risk.",
+      sf4: "If you are under 18, talk the trade over with an adult.",
+      foot: "Item Bridge is an independent project. Not affiliated with Roblox, Adopt Me or Murder Mystery 2. Names belong to their owners.",
+      bmTitle: "Item Bridge deal", bmPlayerA: "Player A", bmPlayerB: "Player B", bmGives: "Gives",
+      bmFooter: "Both players agree. Ready to send items to Roblox: "
+    }
+  };
+
+  var lang = "ru";
+  function t(k) {
+    var d = D[lang];
+    if (d && d[k] !== undefined) return d[k];
+    return D.ru[k] !== undefined ? D.ru[k] : k;
+  }
+
+  /* ======== small helpers ======== */
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } }
+
+  function h(tag, p, kids) {
+    var n = document.createElement(tag);
+    if (p) {
+      Object.keys(p).forEach(function (k) {
+        var v = p[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "text") n.textContent = v;
+        else if (k === "value" || k === "checked" || k === "disabled" || k === "hidden") n[k] = v;
+        else if (k.slice(0, 2) === "on") n.addEventListener(k.slice(2), v);
+        else n.setAttribute(k, v === true ? "" : v);
+      });
+    }
+    (kids || []).forEach(function (c) {
+      if (c === null || c === undefined || c === false) return;
+      n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    });
+    return n;
+  }
+
+  function other(g) { return g === "am" ? "mm" : "am"; }
+  function cleanNick(s) { return String(s || "").replace(/^@+/, "").trim(); }
+  function fmtContact(s) { s = String(s || "").trim(); if (!s) return ""; return s.charAt(0) === "@" ? s : "@" + s; }
+  function tsMs(ts) { return ts && ts.toMillis ? ts.toMillis() : Date.now(); }
+  function ago(ms) {
+    var m = Math.floor((Date.now() - ms) / 60000);
+    if (m < 1) return t("agoNow");
+    if (m < 60) return m + " " + t("agoMin");
+    var hh = Math.floor(m / 60);
+    if (hh < 24) return hh + " " + t("agoHour");
+    return Math.floor(hh / 24) + " " + t("agoDay");
+  }
+
+  var toastTimer = null;
+  function toast(msg, kind) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.className = kind || "";
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.hidden = true; }, 3800);
+  }
+
+  function fail(e) {
+    var code = e && e.code ? String(e.code) : "";
+    toast(code.indexOf("permission-denied") >= 0 ? t("errPerm") : t("errGeneric"), "err");
+  }
+
+  /* ======== items ======== */
+  function newRow() {
+    return { name: "", qty: 1, stage: "normal", fly: false, ride: false, kind: "knife", rarity: "godly" };
+  }
+
+  function revLookup(map, value, fallback) {
+    var keys = Object.keys(map);
+    for (var i = 0; i < keys.length; i++) if (map[keys[i]] === value) return keys[i];
+    return fallback;
+  }
+
+  function rowToItem(r, game) {
+    var tags = [];
+    if (game === "am") {
+      if (r.stage === "neon") tags.push("Neon");
+      if (r.stage === "mega") tags.push("Mega Neon");
+      if (r.fly) tags.push("Fly");
+      if (r.ride) tags.push("Ride");
+    } else {
+      tags.push(KIND_EN[r.kind]);
+      tags.push(RAR_EN[r.rarity]);
+    }
+    return { name: r.name.trim().slice(0, 60), qty: r.qty, tags: tags };
+  }
+
+  function itemToRow(it, game) {
+    var r = newRow();
+    r.name = String(it.name || "");
+    r.qty = it.qty > 0 && it.qty <= 99 ? it.qty : 1;
+    var tg = it.tags || [];
+    if (game === "am") {
+      r.stage = tg.indexOf("Mega Neon") >= 0 ? "mega" : (tg.indexOf("Neon") >= 0 ? "neon" : "normal");
+      r.fly = tg.indexOf("Fly") >= 0;
+      r.ride = tg.indexOf("Ride") >= 0;
+    } else {
+      r.kind = revLookup(KIND_EN, tg[0], "knife");
+      r.rarity = revLookup(RAR_EN, tg[1], "godly");
+    }
+    return r;
+  }
+
+  function itemText(it) {
+    var tg = it.tags && it.tags.length ? " · " + it.tags.join(", ") : "";
+    return it.name + " ×" + it.qty + tg;
+  }
+
+  function linesEl(items) {
+    return h("ul", { class: "lines" }, (items || []).map(function (it) { return h("li", { text: itemText(it) }); }));
+  }
+
+  /* ======== items editor ======== */
+  function Editor(idp, game, items) {
+    var rows = items && items.length ? items.map(function (it) { return itemToRow(it, game); }) : [newRow()];
+    var list = h("div", { class: "list" });
+    var add = h("button", { type: "button", class: "btn sm", id: idp + "-add", text: t("addItem") });
+    var el = h("div", { class: "editor list" }, [list, add]);
+
+    function option(v, label) { return h("option", { value: v, text: label }); }
+
+    function buildRow(r, i) {
+      var id = idp + "-" + i;
+      var name = h("input", {
+        id: id + "-name", type: "text", maxlength: "60", autocomplete: "off", spellcheck: "false",
+        placeholder: t(game === "am" ? "phAm" : "phMm"), "aria-label": t("nameAria"), value: r.name
+      });
+      name.addEventListener("input", function () { r.name = name.value; });
+      var qty = h("input", {
+        id: id + "-qty", type: "number", inputmode: "numeric", min: "1", max: "99",
+        "aria-label": t("qtyAria"), value: String(r.qty)
+      });
+      qty.addEventListener("input", function () {
+        var q = parseInt(qty.value, 10);
+        r.qty = q > 0 && q <= 99 ? q : 1;
+      });
+      qty.addEventListener("blur", function () { qty.value = String(r.qty); });
+      var rm = h("button", { id: id + "-rm", type: "button", class: "icon-btn", "aria-label": t("rmAria"), text: "×" });
+      rm.disabled = rows.length <= 1;
+      rm.addEventListener("click", function () { rows.splice(i, 1); draw(); });
+
+      var extra = h("div", { class: "item-extra" });
+      if (game === "am") {
+        var stage = h("select", { id: id + "-stage", "aria-label": t("stageAria") },
+          STAGES.map(function (s) { return option(s, t("stage_" + s)); }));
+        stage.value = r.stage;
+        stage.addEventListener("change", function () { r.stage = stage.value; });
+        extra.appendChild(stage);
+        [["fly", "Fly"], ["ride", "Ride"]].forEach(function (pair) {
+          var cb = h("input", { id: id + "-" + pair[0], type: "checkbox" });
+          cb.checked = !!r[pair[0]];
+          cb.addEventListener("change", function () { r[pair[0]] = cb.checked; });
+          extra.appendChild(h("label", { class: "chip", for: id + "-" + pair[0] }, [cb, h("span", { text: pair[1] })]));
+        });
+      } else {
+        var kind = h("select", { id: id + "-kind", "aria-label": t("kindAria") },
+          KINDS.map(function (k) { return option(k, t("kind_" + k)); }));
+        kind.value = r.kind;
+        kind.addEventListener("change", function () { r.kind = kind.value; });
+        var rar = h("select", { id: id + "-rarity", "aria-label": t("rarAria") },
+          RARITIES.map(function (x) { return option(x, x === "other" ? t("rarity_other") : RAR_EN[x]); }));
+        rar.value = r.rarity;
+        rar.addEventListener("change", function () { r.rarity = rar.value; });
+        extra.appendChild(kind);
+        extra.appendChild(rar);
+      }
+      return h("div", { class: "item" }, [h("div", { class: "item-main" }, [name, qty, rm]), extra]);
+    }
+
+    function draw() {
+      list.textContent = "";
+      rows.forEach(function (r, i) { list.appendChild(buildRow(r, i)); });
+      add.disabled = rows.length >= MAX_ROWS;
+    }
+
+    add.addEventListener("click", function () {
+      if (rows.length >= MAX_ROWS) return;
+      rows.push(newRow());
+      draw();
+      var f = document.getElementById(idp + "-" + (rows.length - 1) + "-name");
+      if (f) f.focus();
+    });
+
+    draw();
+
+    return {
+      el: el,
+      setGame: function (g) { game = g; draw(); },
+      hasItems: function () { return rows.some(function (r) { return r.name.trim().length > 0; }); },
+      getItems: function () {
+        return rows.filter(function (r) { return r.name.trim().length > 0; }).map(function (r) { return rowToItem(r, game); });
+      },
+      focusEmpty: function () {
+        for (var i = 0; i < rows.length; i++) {
+          if (!rows[i].name.trim()) { var f = document.getElementById(idp + "-" + i + "-name"); if (f) f.focus(); return; }
+        }
+      }
+    };
+  }
+
+  /* ======== app state ======== */
+  var app = document.getElementById("app");
+  var view = null;
+  var navEl = null;
+  var badgeEl = null;
+  var db = null, auth = null;
+  var me = null;
+  var started = false;
+  var unsubs = [];
+  var routeTok = 0;
+  var myDeals = [];
+  var onDealsChange = null;
+
+  function TS() { return firebase.firestore.FieldValue.serverTimestamp(); }
+  function clearViews() {
+    unsubs.forEach(function (f) { try { f(); } catch (e) { /* already closed */ } });
+    unsubs = [];
+    onDealsChange = null;
+  }
+
+  function activeDealCount() {
+    return myDeals.filter(function (d) { return d.status === "open"; }).length;
+  }
+  function updateBadge() {
+    if (!badgeEl) return;
+    var n = activeDealCount();
+    badgeEl.textContent = String(n);
+    badgeEl.hidden = n === 0;
+  }
+
+  /* ======== shell ======== */
+  function navLink(name, label, withBadge) {
+    var a = h("a", { href: "#" + name, "data-r": name }, [h("span", { text: label })]);
+    if (withBadge) { badgeEl = h("span", { class: "badge", hidden: true, text: "0" }); a.appendChild(badgeEl); }
+    return a;
+  }
+
+  function setNavActive(name) {
+    if (!navEl) return;
+    var key = (name === "propose" || name === "deal") ? (name === "deal" ? "my" : "board") : name;
+    Array.prototype.forEach.call(navEl.querySelectorAll("a"), function (a) {
+      a.className = a.getAttribute("data-r") === key ? "on" : "";
+    });
+  }
+
+  function buildShell() {
+    app.textContent = "";
+    var brand = h("div", { class: "brand" }, [
+      (function () {
+        var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        s.setAttribute("width", "30"); s.setAttribute("height", "22"); s.setAttribute("viewBox", "0 0 30 22"); s.setAttribute("aria-hidden", "true");
+        s.innerHTML = '<circle cx="4" cy="17" r="3.5" fill="#f7a8d1"/><circle cx="26" cy="17" r="3.5" fill="#ff7a7a"/><path d="M4 17 Q15 -4 26 17" fill="none" stroke="#8fb0ff" stroke-width="2"/>';
+        return s;
+      })(),
+      h("span", { text: "Item Bridge" })
+    ]);
+    var langBox = h("div", { class: "lang", role: "group", "aria-label": "Language" }, ["ru", "en"].map(function (l) {
+      return h("button", {
+        type: "button", class: l === lang ? "on" : "", "aria-pressed": l === lang ? "true" : "false", text: l.toUpperCase(),
+        onclick: function () {
+          if (lang === l) return;
+          lang = l; save("ib-lang", l);
+          document.documentElement.lang = l;
+          buildShell();
+          if (started) route(true);
+        }
+      });
+    }));
+    navEl = h("nav", { class: "nav", "aria-label": "Menu" }, [
+      navLink("board", t("navBoard")), navLink("new", t("navNew")), navLink("my", t("navMy"), true)
+    ]);
+    view = h("div", { class: "view" });
+    app.appendChild(h("header", { class: "top" }, [brand, langBox]));
+    app.appendChild(navEl);
+    app.appendChild(view);
+    app.appendChild(h("footer", { text: t("foot") }));
+    updateBadge();
+  }
+
+  function showFatal(key) {
+    view.textContent = "";
+    view.appendChild(h("div", { class: "empty", text: t(key) }));
+  }
+
+  /* ======== routing ======== */
+  function route(keepScroll) {
+    clearViews();
+    routeTok++;
+    view.textContent = "";
+    var hash = location.hash.replace(/^#\/?/, "");
+    var p = hash.split("/");
+    var name = p[0] || "board";
+    setNavActive(name);
+    if (name === "new") viewNew();
+    else if (name === "my") viewMy();
+    else if (name === "propose" && p[1]) viewPropose(p[1]);
+    else if (name === "deal" && p[1]) viewDeal(p[1]);
+    else { setNavActive("board"); viewBoard(); }
+    if (!keepScroll) window.scrollTo(0, 0);
+  }
+
+  /* ======== board ======== */
+  function offerCard(o, opts) {
+    opts = opts || {};
+    var mine = o.ownerUid === me;
+    var head = h("div", { class: "offer-head" }, [
+      h("b", { text: o.nick }),
+      h("span", { class: "tag g-" + o.dir, text: GAMES[o.dir] }),
+      h("span", { class: "muted small grow", text: ago(tsMs(o.createdAt)) })
+    ]);
+    if (o.status === "closed") head.appendChild(h("span", { class: "pill", text: t("closedTag") }));
+    var body = h("div", { class: "swap" }, [
+      h("div", {}, [h("div", { class: "cap", text: t("giveWord") + " · " + GAMES[o.dir] }), linesEl(o.give)]),
+      h("div", {}, [h("div", { class: "cap", text: t("wantWord") + " · " + GAMES[other(o.dir)] }), linesEl(o.want)])
+    ]);
+    var box = h("div", { class: "panel offer" }, [head, body]);
+    if (o.note) box.appendChild(h("p", { class: "muted small", text: o.note }));
+    if (opts.manage) {
+      var acts = h("div", { class: "row" });
+      acts.appendChild(h("button", {
+        type: "button", class: "btn sm", text: o.status === "open" ? t("closeOffer") : t("publish"),
+        onclick: function () {
+          db.collection("offers").doc(o.id).update({ status: o.status === "open" ? "closed" : "open" }).catch(fail);
+        }
+      }));
+      acts.appendChild(h("button", {
+        type: "button", class: "btn sm danger", text: t("deleteOffer"),
+        onclick: function () { db.collection("offers").doc(o.id).delete().catch(fail); }
+      }));
+      box.appendChild(acts);
+    } else if (mine) {
+      box.appendChild(h("span", { class: "pill", text: t("yourOffer") }));
+    } else if (!opts.noAction) {
+      box.appendChild(h("a", { class: "btn primary", href: "#propose/" + o.id, text: t("propose") }));
+    }
+    return box;
+  }
+
+  function viewBoard() {
+    var tok = routeTok;
+    var filter = "all";
+    var offers = null;
+    var hero = h("section", {}, [h("h1", { text: t("h1") }), h("p", { class: "muted", text: t("sub") }),
+      h("div", { class: "row" }, [h("a", { class: "btn primary", href: "#new", text: t("navNew") })])]);
+    var filters = h("div", { class: "filters", role: "group" });
+    var listEl = h("div", { class: "list" }, [h("p", { class: "muted", text: t("loading") })]);
+
+    function drawFilters() {
+      filters.textContent = "";
+      [["all", "filterAll"], ["am", "filterAm"], ["mm", "filterMm"]].forEach(function (f) {
+        filters.appendChild(h("button", {
+          type: "button", class: filter === f[0] ? "on" : "", "aria-pressed": filter === f[0] ? "true" : "false", text: t(f[1]),
+          onclick: function () { filter = f[0]; drawFilters(); drawList(); }
+        }));
+      });
+    }
+
+    function drawList() {
+      if (tok !== routeTok) return;
+      listEl.textContent = "";
+      if (offers === null) { listEl.appendChild(h("p", { class: "muted", text: t("loading") })); return; }
+      var shown = offers.filter(function (o) {
+        return o.status === "open" && (filter === "all" || o.dir === filter);
+      });
+      if (!shown.length) { listEl.appendChild(h("div", { class: "empty", text: t("empty") })); return; }
+      shown.forEach(function (o) { listEl.appendChild(offerCard(o)); });
+    }
+
+    drawFilters();
+    view.appendChild(hero);
+    view.appendChild(h("section", {}, [h("h2", { text: t("boardH") }), filters, listEl]));
+    view.appendChild(infoSections());
+
+    var cutoff = firebase.firestore.Timestamp.fromMillis(Date.now() - TTL_DAYS * 86400000);
+    var unsub = db.collection("offers").where("createdAt", ">", cutoff).orderBy("createdAt", "desc").limit(80)
+      .onSnapshot(function (snap) {
+        offers = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; });
+        drawList();
+      }, function (e) { offers = []; drawList(); fail(e); });
+    unsubs.push(unsub);
+  }
+
+  function infoSections() {
+    var how = h("details", { class: "info" }, [h("summary", { text: t("howH") }),
+      h("div", { class: "body" }, [h("ol", { class: "steps" }, ["s1", "s2", "s3", "s4", "s5"].map(function (k) { return h("li", { text: t(k) }); }))])]);
+    var trust = h("details", { class: "info" }, [h("summary", { text: t("trustH") }),
+      h("div", { class: "body" }, [
+        h("dl", { class: "facts" }, ["t1", "t2", "t3", "t4"].map(function (k) {
+          return h("div", {}, [h("dt", { text: t(k + "h") }), h("dd", { text: t(k + "d") })]);
+        })),
+        h("h3", { text: t("revH") }),
+        h("div", { class: "empty", text: t("revEmpty") })
+      ])]);
+    var safe = h("details", { class: "info" }, [h("summary", { text: t("safeH") }),
+      h("div", { class: "body" }, [h("ul", { class: "rules" }, ["sf0", "sf1", "sf2", "sf3", "sf4"].map(function (k) { return h("li", { text: t(k) }); }))])]);
+    return h("section", {}, [how, trust, safe]);
+  }
+
+  /* ======== new offer ======== */
+  function dirPicker(name, current, onPick) {
+    var box = h("div", { class: "dirs" });
+    [["am", "Adopt Me → MM2", "dirAmSub"], ["mm", "MM2 → Adopt Me", "dirMmSub"]].forEach(function (d) {
+      var input = h("input", { type: "radio", name: name, id: name + "-" + d[0], value: d[0] });
+      input.checked = current === d[0];
+      input.addEventListener("change", function () { if (input.checked) onPick(d[0]); });
+      box.appendChild(h("label", { class: "dir" }, [input, h("span", { class: "dir-body" }, [h("b", { text: d[1] }), h("span", { text: t(d[2]) })])]));
+    });
+    return box;
+  }
+
+  function viewNew() {
+    var dir = "am";
+    var giveEd = Editor("give", dir, null);
+    var wantEd = Editor("want", other(dir), null);
+    var tagGive = h("span", { class: "tag g-am", text: GAMES.am });
+    var tagWant = h("span", { class: "tag g-mm", text: GAMES.mm });
+    var nick = h("input", { type: "text", id: "nick", maxlength: "30", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: t("nickPh"), value: load("ib-nick") || "" });
+    var note = h("textarea", { id: "note", rows: "2", maxlength: "200", placeholder: t("notePh") });
+    var status = h("p", { class: "status", role: "status", "aria-live": "polite" });
+    var btn = h("button", { type: "button", class: "btn primary", id: "publish", text: t("publish") });
+
+    function setDir(d) {
+      dir = d;
+      giveEd.setGame(d); wantEd.setGame(other(d));
+      tagGive.className = "tag g-" + d; tagGive.textContent = GAMES[d];
+      tagWant.className = "tag g-" + other(d); tagWant.textContent = GAMES[other(d)];
+    }
+
+    btn.addEventListener("click", function () {
+      var n = cleanNick(nick.value);
+      if (!giveEd.hasItems()) { status.className = "status err"; status.textContent = t("errGive"); giveEd.focusEmpty(); return; }
+      if (!wantEd.hasItems()) { status.className = "status err"; status.textContent = t("errWant"); wantEd.focusEmpty(); return; }
+      if (n.length < 3 || n.length > 20) { status.className = "status err"; status.textContent = t("errNick"); nick.focus(); return; }
+      status.textContent = ""; status.className = "status";
+      btn.disabled = true;
+      save("ib-nick", n);
+      var slow = setTimeout(function () { toast(t("errGeneric"), "err"); btn.disabled = false; }, 8000);
+      db.collection("offers").add({
+        ownerUid: me, nick: n, dir: dir, give: giveEd.getItems(), want: wantEd.getItems(),
+        note: note.value.trim().slice(0, 200), status: "open", createdAt: TS()
+      }).then(function () {
+        clearTimeout(slow);
+        toast(t("published"), "ok");
+        location.hash = "board";
+      }).catch(function (e) { clearTimeout(slow); btn.disabled = false; fail(e); });
+    });
+
+    view.appendChild(h("section", {}, [
+      h("h2", { text: t("newH") }),
+      h("div", { class: "panel form" }, [
+        h("fieldset", {}, [h("legend", { text: t("dirLegend") }), dirPicker("dir", dir, setDir)]),
+        h("fieldset", {}, [h("legend", {}, [h("span", { text: t("giveLegend") }), tagGive]), giveEd.el]),
+        h("fieldset", {}, [h("legend", {}, [h("span", { text: t("wantLegend") }), tagWant]), wantEd.el]),
+        h("div", {}, [h("label", { class: "lbl", for: "nick", text: t("nickLabel") }), nick, h("p", { class: "hint", text: t("nickHint") })]),
+        h("div", {}, [h("label", { class: "lbl", for: "note", text: t("noteLabel") }), note]),
+        btn, status
+      ])
+    ]));
+  }
+
+  /* ======== propose (start a deal from an offer) ======== */
+  function viewPropose(offerId) {
+    var tok = routeTok;
+    view.appendChild(h("p", { class: "muted", text: t("loading") }));
+    db.collection("offers").doc(offerId).get().then(function (snap) {
+      if (tok !== routeTok) return;
+      view.textContent = "";
+      if (!snap.exists || snap.data().status !== "open") { view.appendChild(h("div", { class: "empty", text: t("offerGone") })); return; }
+      var o = snap.data(); o.id = snap.id;
+      var sec = h("section", {}, [h("h2", { text: t("proposeH") }), offerCard(o, { noAction: true })]);
+      if (o.ownerUid === me) {
+        sec.appendChild(h("div", { class: "empty", text: t("ownOffer") }));
+        view.appendChild(sec);
+        return;
+      }
+      var bGame = other(o.dir);
+      var ed = Editor("pb", bGame, o.want);
+      var nick = h("input", { type: "text", id: "pnick", maxlength: "30", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: t("nickPh"), value: load("ib-nick") || "" });
+      var status = h("p", { class: "status", role: "status", "aria-live": "polite" });
+      var btn = h("button", { type: "button", class: "btn primary", id: "send-proposal", text: t("sendProposal") });
+      btn.addEventListener("click", function () {
+        var n = cleanNick(nick.value);
+        if (!ed.hasItems()) { status.className = "status err"; status.textContent = t("errGive"); ed.focusEmpty(); return; }
+        if (n.length < 3 || n.length > 20) { status.className = "status err"; status.textContent = t("errNick"); nick.focus(); return; }
+        btn.disabled = true;
+        save("ib-nick", n);
+        db.collection("deals").add({
+          offerId: o.id, aUid: o.ownerUid, bUid: me, members: [o.ownerUid, me],
+          aNick: o.nick, bNick: n, dir: o.dir, aItems: o.give, bItems: ed.getItems(),
+          aContact: "", bContact: "", rev: 1, aAgreedRev: 0, bAgreedRev: 0, status: "open",
+          createdAt: TS(), updatedAt: TS()
+        }).then(function (ref) { location.hash = "deal/" + ref.id; })
+          .catch(function (e) { btn.disabled = false; fail(e); });
+      });
+      sec.appendChild(h("div", { class: "panel form" }, [
+        h("fieldset", {}, [h("legend", {}, [h("span", { text: t("yourItems") }), h("span", { class: "tag g-" + bGame, text: GAMES[bGame] })]),
+          h("p", { class: "hint", text: t("yourItemsHint") }), ed.el]),
+        h("div", {}, [h("label", { class: "lbl", for: "pnick", text: t("nickLabel") }), nick, h("p", { class: "hint", text: t("nickHint") })]),
+        btn, status
+      ]));
+      view.appendChild(sec);
+    }).catch(function (e) { if (tok === routeTok) { view.textContent = ""; view.appendChild(h("div", { class: "empty", text: t("offerGone") })); } fail(e); });
+  }
+
+  /* ======== deal room ======== */
+  function bridgeMessage(d) {
+    var gA = d.dir, gB = other(gA);
+    var a = d.aNick + (d.aContact ? " (" + fmtContact(d.aContact) + ")" : "");
+    var b = d.bNick + (d.bContact ? " (" + fmtContact(d.bContact) + ")" : "");
+    var lines = [t("bmTitle") + " #" + d.id, "", t("bmPlayerA") + ": " + a, t("bmGives") + " (" + GAMES[gA] + "):"];
+    (d.aItems || []).forEach(function (it) { lines.push("• " + itemText(it)); });
+    lines.push("", t("bmPlayerB") + ": " + b, t("bmGives") + " (" + GAMES[gB] + "):");
+    (d.bItems || []).forEach(function (it) { lines.push("• " + itemText(it)); });
+    lines.push("", t("bmFooter") + BRIDGE_RBX);
+    return lines.join("\n");
+  }
+
+  function viewDeal(dealId) {
+    var tok = routeTok;
+    var ref = db.collection("deals").doc(dealId);
+    var deal = null, role = null, editing = false, editor = null, cancelArmed = false, built = false;
+
+    var head = h("div", { class: "offer-head" });
+    var cardA = h("div"), cardB = h("div");
+    var agreeBox = h("div", { class: "list" });
+    var doneBox = h("div");
+    var contactIn = h("input", { type: "text", id: "contact", maxlength: "40", autocomplete: "off", autocapitalize: "off", spellcheck: "false", placeholder: t("contactPh") });
+    var theirContact = h("p", { class: "muted small" });
+    var contactBox = h("div", { class: "panel" }, [
+      h("label", { class: "lbl", for: "contact", text: t("myContact") }), contactIn,
+      h("p", { class: "hint", text: t("contactHint") }), theirContact
+    ]);
+    var cancelBox = h("div");
+    var root = h("section", {}, [
+      h("h2", { text: t("dealH") }), head,
+      h("div", { class: "cols" }, [cardA, cardB]),
+      agreeBox, doneBox, contactBox, cancelBox
+    ]);
+
+    function myGame() { return role === "a" ? deal.dir : other(deal.dir); }
+    function update(fields) {
+      fields.updatedAt = TS();
+      return ref.update(fields).catch(fail);
+    }
+
+    function drawHead() {
+      head.textContent = "";
+      var cls = deal.status === "cancelled" ? "err" : (deal.status === "reported" ? "ok" : "warn");
+      head.appendChild(h("span", { class: "pill " + cls, text: t("st_" + deal.status) }));
+      head.appendChild(h("span", { class: "muted small", text: "#" + deal.id }));
+    }
+
+    function drawCard(side) {
+      var box = side === "a" ? cardA : cardB;
+      box.textContent = "";
+      var game = side === "a" ? deal.dir : other(deal.dir);
+      var mine = role === side;
+      var agreed = deal[side + "AgreedRev"] === deal.rev;
+      var c = h("div", { class: "panel card" });
+      c.appendChild(h("div", { class: "card-head" }, [
+        h("b", { text: deal[side + "Nick"] }),
+        h("span", { class: "tag g-" + game, text: GAMES[game] }),
+        mine ? h("span", { class: "pill", text: t("you") }) : null,
+        h("span", { class: "pill " + (agreed ? "ok" : ""), text: agreed ? t("agreedPill") : t("thinkingPill") })
+      ]));
+      if (mine && editing) {
+        c.appendChild(editor.el);
+        c.appendChild(h("div", { class: "row" }, [
+          h("button", {
+            type: "button", class: "btn sm primary", text: t("saveItems"),
+            onclick: function () {
+              if (!editor.hasItems()) { editor.focusEmpty(); return; }
+              var f = {}; f[role + "Items"] = editor.getItems(); f.rev = deal.rev + 1; f[role + "AgreedRev"] = 0;
+              editing = false; editor = null;
+              update(f);
+              drawCard(role);
+            }
+          }),
+          h("button", { type: "button", class: "btn sm", text: t("cancelEdit"), onclick: function () { editing = false; editor = null; drawCard(role); drawAgree(); } })
+        ]));
+      } else {
+        c.appendChild(linesEl(deal[side + "Items"]));
+        if (mine && deal.status === "open") {
+          c.appendChild(h("button", {
+            type: "button", class: "btn sm", text: t("edit"),
+            onclick: function () { editing = true; editor = Editor("de", myGame(), deal[role + "Items"]); drawCard(role); drawAgree(); }
+          }));
+        }
+      }
+      box.appendChild(c);
+    }
+
+    function drawAgree() {
+      agreeBox.textContent = "";
+      if (deal.status !== "open") return;
+      var agreed = deal[role + "AgreedRev"] === deal.rev;
+      var b = h("button", {
+        type: "button", class: "btn " + (agreed ? "" : "primary"), id: "agree", text: agreed ? t("iRevoke") : t("iAgree"),
+        onclick: function () {
+          if (editing) { toast(t("saveFirst"), "err"); return; }
+          var f = {}; f[role + "AgreedRev"] = agreed ? 0 : deal.rev;
+          update(f);
+        }
+      });
+      agreeBox.appendChild(b);
+      agreeBox.appendChild(h("p", { class: "hint", text: t("agreeHint") }));
+    }
+
+    function drawDone() {
+      doneBox.textContent = "";
+      if (deal.status === "cancelled") { doneBox.appendChild(h("div", { class: "empty", text: t("cancelledNote") })); return; }
+      var both = deal.aAgreedRev === deal.rev && deal.bAgreedRev === deal.rev;
+      if (!both) return;
+      var msg = bridgeMessage(deal);
+      var link = "https://t.me/" + BRIDGE_TG + "?text=" + encodeURIComponent(msg);
+      function markReported() { if (deal.status === "open") update({ status: "reported" }); }
+      var msgEl = h("div", { class: "msgbox", id: "bridge-msg", text: msg });
+      var status = h("p", { class: "status", role: "status", "aria-live": "polite" });
+      var panel = h("div", { class: "panel list" }, [
+        h("h3", { text: t("bothAgreed") }),
+        h("p", { class: "muted", text: t("bothAgreedText") }),
+        h("p", { class: "small", text: t("bridgeAcc") + ": " + BRIDGE_RBX }),
+        msgEl,
+        h("a", { class: "btn primary", href: link, target: "_blank", rel: "noopener noreferrer", text: t("reportBtn"), onclick: markReported }),
+        h("button", {
+          type: "button", class: "btn", text: t("copyBtn"),
+          onclick: function () {
+            function manual() {
+              var r = document.createRange(); r.selectNodeContents(msgEl);
+              var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+              status.className = "status warn"; status.textContent = t("copyManual");
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(msg).then(function () { status.className = "status ok"; status.textContent = t("copied"); markReported(); }, manual);
+            } else { manual(); }
+          }
+        }),
+        status
+      ]);
+      if (deal.status === "reported") panel.appendChild(h("p", { class: "status ok", text: t("reportedNote") }));
+      doneBox.appendChild(panel);
+    }
+
+    function drawContacts() {
+      if (document.activeElement !== contactIn) contactIn.value = deal[role + "Contact"] || "";
+      var oc = deal[(role === "a" ? "b" : "a") + "Contact"];
+      theirContact.textContent = oc ? t("theirContact") + ": " + fmtContact(oc) : "";
+    }
+
+    function drawCancel() {
+      cancelBox.textContent = "";
+      if (deal.status === "cancelled") return;
+      cancelBox.appendChild(h("button", {
+        type: "button", class: "btn sm danger", text: cancelArmed ? t("cancelSure") : t("cancelDeal"),
+        onclick: function () {
+          if (!cancelArmed) { cancelArmed = true; drawCancel(); return; }
+          update({ status: "cancelled" });
+        }
+      }));
+    }
+
+    function drawAll() {
+      drawHead();
+      ["a", "b"].forEach(function (s) { if (!(editing && role === s)) drawCard(s); });
+      drawAgree(); drawDone(); drawContacts(); drawCancel();
+    }
+
+    function buildOnce() {
+      built = true;
+      contactIn.addEventListener("change", function () {
+        var f = {}; f[role + "Contact"] = contactIn.value.trim().slice(0, 40);
+        update(f);
+      });
+      view.textContent = "";
+      view.appendChild(root);
+      view.appendChild(chatSection());
+    }
+
+    /* chat */
+    function chatSection() {
+      var list = h("div", { class: "chat", "aria-live": "polite" }, [h("p", { class: "muted small", text: t("noMsgs") })]);
+      var input = h("input", { type: "text", id: "chat-in", maxlength: "300", autocomplete: "off", placeholder: t("chatPh"), "aria-label": t("chatPh") });
+      var form = h("form", { class: "chatform" }, [input, h("button", { type: "submit", class: "btn primary", text: t("send") })]);
+      form.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var text = input.value.trim();
+        if (!text || !deal) return;
+        input.value = "";
+        ref.collection("messages").add({ uid: me, nick: deal[role + "Nick"], text: text.slice(0, 300), createdAt: TS() }).catch(fail);
+      });
+      var u = ref.collection("messages").orderBy("createdAt").limit(200).onSnapshot(function (snap) {
+        if (tok !== routeTok) return;
+        list.textContent = "";
+        if (snap.empty) { list.appendChild(h("p", { class: "muted small", text: t("noMsgs") })); return; }
+        snap.docs.forEach(function (d) {
+          var m = d.data();
+          list.appendChild(h("div", { class: "bubble" + (m.uid === me ? " me" : "") }, [h("small", { text: m.nick }), document.createTextNode(m.text)]));
+        });
+        list.scrollTop = list.scrollHeight;
+      }, function () { /* no access: shown by the deal itself */ });
+      unsubs.push(u);
+      return h("section", {}, [h("h2", { text: t("chatH") }), h("div", { class: "panel list" }, [list, form])]);
+    }
+
+    view.appendChild(h("p", { class: "muted", text: t("loading") }));
+    var unsub = ref.onSnapshot(function (snap) {
+      if (tok !== routeTok) return;
+      if (!snap.exists) { view.textContent = ""; view.appendChild(h("div", { class: "empty", text: t("notFound") })); return; }
+      deal = snap.data(); deal.id = snap.id;
+      role = deal.aUid === me ? "a" : (deal.bUid === me ? "b" : null);
+      if (!role) { view.textContent = ""; view.appendChild(h("div", { class: "empty", text: t("notFound") })); return; }
+      if (!built) buildOnce();
+      if (deal.status !== "open") { cancelArmed = false; if (editing) { editing = false; editor = null; } }
+      drawAll();
+    }, function () {
+      if (tok !== routeTok) return;
+      view.textContent = ""; view.appendChild(h("div", { class: "empty", text: t("notFound") }));
+    });
+    unsubs.push(unsub);
+  }
+
+  /* ======== my stuff ======== */
+  function viewMy() {
+    var tok = routeTok;
+    var offersBox = h("div", { class: "list" }, [h("p", { class: "muted", text: t("loading") })]);
+    var dealsBox = h("div", { class: "list" });
+
+    function drawDeals() {
+      if (tok !== routeTok) return;
+      dealsBox.textContent = "";
+      if (!myDeals.length) { dealsBox.appendChild(h("div", { class: "empty", text: t("noMyDeals") })); return; }
+      myDeals.slice().sort(function (a, b) { return tsMs(b.updatedAt) - tsMs(a.updatedAt); }).forEach(function (d) {
+        var mineA = d.aUid === me;
+        var who = mineA ? d.bNick : d.aNick;
+        var cls = d.status === "cancelled" ? "err" : (d.status === "reported" ? "ok" : "warn");
+        dealsBox.appendChild(h("div", { class: "panel offer" }, [
+          h("div", { class: "offer-head" }, [
+            h("b", { text: t("withWho") + " " + who }),
+            h("span", { class: "pill " + cls, text: t("st_" + d.status) }),
+            h("span", { class: "muted small grow", text: ago(tsMs(d.updatedAt)) })
+          ]),
+          h("a", { class: "btn sm", href: "#deal/" + d.id, text: t("openDeal") })
+        ]));
+      });
+    }
+    onDealsChange = drawDeals;
+    drawDeals();
+
+    view.appendChild(h("section", {}, [h("h2", { text: t("myDealsH") }), dealsBox]));
+    view.appendChild(h("section", {}, [h("h2", { text: t("myH") }), offersBox]));
+    view.appendChild(h("p", { class: "hint", text: t("myNote") }));
+
+    var u = db.collection("offers").where("ownerUid", "==", me).onSnapshot(function (snap) {
+      if (tok !== routeTok) return;
+      offersBox.textContent = "";
+      var arr = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; })
+        .sort(function (a, b) { return tsMs(b.createdAt) - tsMs(a.createdAt); });
+      if (!arr.length) { offersBox.appendChild(h("div", { class: "empty", text: t("noMyOffers") })); return; }
+      arr.forEach(function (o) { offersBox.appendChild(offerCard(o, { manage: true })); });
+    }, fail);
+    unsubs.push(u);
+  }
+
+  /* ======== boot ======== */
+  function start() {
+    if (started) return;
+    started = true;
+    db.collection("deals").where("members", "array-contains", me).onSnapshot(function (snap) {
+      myDeals = snap.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; });
+      updateBadge();
+      if (onDealsChange) onDealsChange();
+    }, function () { /* the badge just stays empty */ });
+    window.addEventListener("hashchange", function () { route(false); });
+    route(false);
+  }
+
+  function boot() {
+    var saved = load("ib-lang");
+    if (saved === "ru" || saved === "en") lang = saved;
+    document.documentElement.lang = lang;
+    buildShell();
+    if (typeof firebase === "undefined") { showFatal("errNoLib"); return; }
+    if (!FIREBASE_CONFIG) { showFatal("errSetup"); return; }
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      auth = firebase.auth();
+      db = firebase.firestore();
+      try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e2) {}
+    } catch (e) { showFatal("errGeneric"); return; }
+    var badge = document.createElement("div");
+    badge.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:99;padding:4px 8px;border-radius:8px;background:#1b2130;color:#9099ae;font:11px/1.3 sans-serif;opacity:.9";
+    badge.textContent = "v3 · база: проверяю…";
+    document.body.appendChild(badge);
+    function checkDb() {
+      var done = false;
+      var to = setTimeout(function () { if (!done) { done = true; badge.textContent = "v3 · база: НЕТ СВЯЗИ (таймаут)"; badge.style.color = "#ff7a7a"; } }, 10000);
+      db.collection("offers").limit(1).get({ source: "server" }).then(function () {
+        if (done) return; done = true; clearTimeout(to);
+        badge.textContent = "v3 · база: связь есть"; badge.style.color = "#6fe39a";
+      }).catch(function (e) {
+        if (done) return; done = true; clearTimeout(to);
+        badge.textContent = "v3 · база: ошибка " + (e && e.code ? e.code : "?"); badge.style.color = "#ff7a7a";
+      });
+    }
+    auth.onAuthStateChanged(function (u) {
+      if (u) { me = u.uid; start(); checkDb(); }
+    });
+    auth.signInAnonymously().catch(function () { showFatal("errAuth"); });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
